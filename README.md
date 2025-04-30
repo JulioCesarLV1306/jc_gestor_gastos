@@ -29,7 +29,7 @@ Esta es una excelente herramienta para tomar conciencia de tus patrones de gasto
 
 ### Pantalla Principal
 ![Pantalla Principal](assets/img/logo1.png)
-
+<img src="assets/img/logo1.png" width="300">
 
 
 ## Cómo Empezar
