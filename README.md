@@ -28,8 +28,13 @@ Esta es una excelente herramienta para tomar conciencia de tus patrones de gasto
 ## Capturas de Pantalla
 
 ### Pantalla Principal
-<img src="assets/img/logo1.png" width="300">
+<img src="screenshots/screem_princ.png" width="300">
 
+### Registro de Gasto
+<img src="screenshots/second_screen.png" width="300 ">
+
+### Lista de Gastos
+<img src="screenshots/list_gastos.png" width="400" height="600">
 
 ## Cómo Empezar
 
