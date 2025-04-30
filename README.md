@@ -28,7 +28,6 @@ Esta es una excelente herramienta para tomar conciencia de tus patrones de gasto
 ## Capturas de Pantalla
 
 ### Pantalla Principal
-![Pantalla Principal](assets/img/logo1.png)
 <img src="assets/img/logo1.png" width="300">
 
 
