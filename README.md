@@ -34,7 +34,7 @@ Esta es una excelente herramienta para tomar conciencia de tus patrones de gasto
 <img src="screenshots/second_screen.png" width="300 ">
 
 ### Lista de Gastos
-<img src="screenshots/list_gastos.png" width="400" height="600">
+<img src="screenshots/list_gastos.png" width="300">
 
 ## Cómo Empezar
 
