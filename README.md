@@ -24,7 +24,13 @@ Esta es una excelente herramienta para tomar conciencia de tus patrones de gasto
 * Generación de informes de gastos por períodos (semanal, mensual, anual).
 * Consejos personalizados basados en los patrones de gasto.
 
+
 ## Capturas de Pantalla
+
+### Pantalla Principal
+![Pantalla Principal](assets/logo1.png)
+
+
 
 ## Cómo Empezar
 
