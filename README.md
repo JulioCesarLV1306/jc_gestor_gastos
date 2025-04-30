@@ -37,7 +37,7 @@ Para ejecutar esta aplicación en tu propio entorno, sigue estos pasos:
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone [https://github.com/delulu?tab=repositories](https://github.com/delulu?tab=repositories)
+    git clone https://github.com/JulioCesarLV1306/jc_gestor_gastos.git
     ```
 
 2.  **Asegúrate de tener Flutter instalado:**
