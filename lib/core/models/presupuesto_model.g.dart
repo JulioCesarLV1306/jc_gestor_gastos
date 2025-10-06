@@ -20,19 +20,25 @@ class PresupuestoModelAdapter extends TypeAdapter<PresupuestoModel> {
       presupuestoGeneral: fields[0] as double,
       saldoRestante: fields[1] as double,
       ahorro: fields[2] as double,
+      metaAhorro: fields[3] as double,
+      semanasMetaAhorro: fields[4] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, PresupuestoModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.presupuestoGeneral)
       ..writeByte(1)
       ..write(obj.saldoRestante)
       ..writeByte(2)
-      ..write(obj.ahorro);
+      ..write(obj.ahorro)
+      ..writeByte(3)
+      ..write(obj.metaAhorro)
+      ..writeByte(4)
+      ..write(obj.semanasMetaAhorro);
   }
 
   @override

@@ -11,11 +11,19 @@ class PresupuestoModel extends HiveObject {
   double saldoRestante;
 
   @HiveField(2)
-  double ahorro; // Nuevo atributo para el ahorro
+  double ahorro; // Ahorro recomendado (15% del presupuesto)
+
+  @HiveField(3)
+  double metaAhorro; // Meta de ahorro definida por el usuario
+
+  @HiveField(4)
+  int semanasMetaAhorro; // Semanas para alcanzar la meta de ahorro
 
   PresupuestoModel({
     required this.presupuestoGeneral,
     required this.saldoRestante,
     required this.ahorro,
+    this.metaAhorro = 0.0,
+    this.semanasMetaAhorro = 0,
   });
 }
