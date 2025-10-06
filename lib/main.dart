@@ -14,6 +14,7 @@ void main() async{
   if (!Hive.isAdapterRegistered(1)) {
     Hive.registerAdapter(PresupuestoModelAdapter());
   }
+  // Abrir la caja de Hive para gastos
   // Abrir la caja de Hive
   await Hive.openBox<PresupuestoModel>('presupuestoBox');
 // Leer el estado del onboarding
