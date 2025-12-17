@@ -1,14 +1,26 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gestor_de_gastos_jc/core/models/presupuesto_model.dart';
 import 'package:gestor_de_gastos_jc/modules/home/provider_home.dart';
 import 'package:gestor_de_gastos_jc/routes/routers.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
 
 void main() async{
    WidgetsFlutterBinding.ensureInitialized();
-    // Inicializar Hive
+   
+  // Cargar variables de entorno
+  await dotenv.load(fileName: ".env");
+   
+  // Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Inicializar Hive
   await Hive.initFlutter();
   // Registrar adaptadores
   if (!Hive.isAdapterRegistered(1)) {
