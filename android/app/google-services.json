@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "657285918016",
+    "project_id": "gestor-financiero-28ac2",
+    "storage_bucket": "gestor-financiero-28ac2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657285918016:android:72ba5daf3469006515dea5",
+        "android_client_info": {
+          "package_name": "com.example.gestor_de_gastos_jc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAFR6oLrlbrMC6p6KgWFCO6yXYHMs7RAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
