@@ -6,11 +6,13 @@ import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gestor_de_gastos_jc/config/constans/app_colors.dart';
 import 'package:gestor_de_gastos_jc/config/services/user_service.dart';
+import 'package:gestor_de_gastos_jc/modules/chatbot/chatbot_screen.dart';
 import 'package:gestor_de_gastos_jc/modules/home/provider_home.dart';
 import 'package:gestor_de_gastos_jc/widgets/custom_card.dart';
 import 'package:gestor_de_gastos_jc/widgets/custom_budget_dialog.dart';
 import 'package:gestor_de_gastos_jc/widgets/custom_savings_dialog.dart';
 import 'package:gestor_de_gastos_jc/widgets/custon_drawer.dart';
+import 'package:gestor_de_gastos_jc/widgets/buttons/index.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../bd/bd.dart';
@@ -185,7 +187,33 @@ class _ScreenHomeState extends State<ScreenHome> {
       child: Scaffold(
         appBar: _buildAppBar(),
         body: _buildBody(providerHome),
+        floatingActionButton: _buildChatButton(),
       ),
+    );
+  }
+
+  /// Construye el botón flotante de chat
+  Widget _buildChatButton() {
+    return FloatingChatButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ChatbotScreen(),
+          ),
+        );
+      },
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          AppColors.primaryBlue,
+          AppColors.primaryPurple,
+        ],
+      ),
+      icon: Icons.smart_toy_outlined,
+      size: 65,
+      showPulseAnimation: true,
     );
   }
 
@@ -397,9 +425,8 @@ class _ScreenHomeState extends State<ScreenHome> {
         final isMobile = screenWidth < 600;
         final isTablet = screenWidth >= 600 && screenWidth < 1200;
         
-        // Espaciado y tamaños responsivos
+        // Espaciado responsivo
         final verticalMargin = isMobile ? 16.0 : isTablet ? 20.0 : 24.0;
-        final borderRadius = isMobile ? 20.0 : isTablet ? 24.0 : 28.0;
         final spacing = isMobile ? 12.0 : isTablet ? 16.0 : 20.0;
         
         return Container(
@@ -407,8 +434,7 @@ class _ScreenHomeState extends State<ScreenHome> {
           child: Column(
             children: [
               // Card de Presupuesto
-              _buildModernConfigCard(
-                context: context,
+              ConfigCardButton(
                 icon: Icons.account_balance_wallet_outlined,
                 label: 'Presupuesto Mensual',
                 subtitle: 'Gestiona tu límite',
@@ -423,12 +449,10 @@ class _ScreenHomeState extends State<ScreenHome> {
                 ),
                 iconColor: AppColors.primaryBlue,
                 onPressed: () => _mostrarDialogoPresupuesto(context, providerHome),
-                borderRadius: borderRadius,
               ),
               SizedBox(height: spacing),
               // Card de Ahorro
-              _buildModernConfigCard(
-                context: context,
+              ConfigCardButton(
                 icon: Icons.savings_outlined,
                 label: 'Meta de Ahorro',
                 subtitle: 'Planifica tu futuro',
@@ -443,160 +467,11 @@ class _ScreenHomeState extends State<ScreenHome> {
                 ),
                 iconColor: AppColors.primaryGreen,
                 onPressed: () => _mostrarDialogoMetaAhorro(context, providerHome),
-                borderRadius: borderRadius,
               ),
             ],
           ),
         );
       },
-    );
-  }
-  
-  /// Construye una card moderna de configuración
-  Widget _buildModernConfigCard({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required double value,
-    required Gradient gradient,
-    required Color iconColor,
-    required VoidCallback onPressed,
-    required double borderRadius,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 1200;
-    
-    // Tamaños responsivos
-    final horizontalPadding = isMobile ? 16.0 : isTablet ? 20.0 : 24.0;
-    final verticalPadding = isMobile ? 16.0 : isTablet ? 18.0 : 20.0;
-    final iconSize = isMobile ? 24.0 : isTablet ? 28.0 : 32.0;
-    final iconContainerSize = isMobile ? 48.0 : isTablet ? 56.0 : 64.0;
-    final labelFontSize = isMobile ? 16.0 : isTablet ? 17.0 : 18.0;
-    final subtitleFontSize = isMobile ? 12.0 : isTablet ? 13.0 : 14.0;
-    final valueFontSize = isMobile ? 20.0 : isTablet ? 22.0 : 24.0;
-    
-    return Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: iconColor.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            child: Row(
-              children: [
-                // Icono con contenedor glassmorphism
-                Container(
-                  width: iconContainerSize,
-                  height: iconContainerSize,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: iconSize,
-                  ),
-                ),
-                SizedBox(width: isMobile ? 12 : isTablet ? 16 : 20),
-                // Información
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: labelFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: subtitleFontSize,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white.withOpacity(0.85),
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Valor con diseño minimalista
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 12 : isTablet ? 14 : 16,
-                        vertical: isMobile ? 8 : isTablet ? 10 : 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        '\$${value.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: valueFontSize,
-                          fontWeight: FontWeight.w900,
-                          color: iconColor,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: isMobile ? 12 : 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1038,56 +913,21 @@ class _ExpenseForm extends StatelessWidget {
 
   /// Construye el botón de guardar
   Widget _buildSubmitButton(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            AppColors.primaryBlue,
-            AppColors.primaryPurple,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
+    return GradientButton(
+      text: 'Guardar Gasto',
+      icon: Icons.add_circle_outline,
+      gradient: const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          AppColors.primaryBlue,
+          AppColors.primaryPurple,
         ],
       ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: () async {
-          await providerHome.guardarGasto(context);
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.add_circle_outline,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Guardar Gasto',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
+      shadowColor: AppColors.primaryBlue,
+      onPressed: () async {
+        await providerHome.guardarGasto(context);
+      },
     );
   }
 }
