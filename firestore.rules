@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para la colección de usuarios
+    match /users/{userId} {
+      // Permitir al usuario leer, actualizar y eliminar su propio documento
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+      
+      // Reglas para la subcolección de gastos
+      match /gastos/{gastoId} {
+        // El usuario puede leer, crear, actualizar y eliminar sus propios gastos
+        allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Reglas para la subcolección de presupuestos (por si la necesitas en el futuro)
+      match /presupuestos/{presupuestoId} {
+        allow read, write, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Reglas para colección de gastos (expenses) en la raíz
+    match /expenses/{expenseId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reglas para colección de presupuestos (budgets) en la raíz
+    match /budgets/{budgetId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reglas para colección de ahorros (savings) en la raíz
+    match /savings/{savingId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Reglas para colección de predicciones (predictions) en la raíz
+    match /predictions/{predictionId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}
