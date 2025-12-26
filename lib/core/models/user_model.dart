@@ -16,10 +16,20 @@ class UserModel extends HiveObject {
   @HiveField(3)
   final String password;
 
+  @HiveField(4)
+  final String accountType; // 'admin' o 'user'
+
   UserModel({
     required this.id,
     required this.username,
     required this.email,
     required this.password,
+    this.accountType = 'user', // Por defecto es 'user'
   });
+
+  // Método para verificar si es administrador
+  bool get isAdmin => accountType == 'admin';
+
+  // Método para verificar si es usuario regular
+  bool get isUser => accountType == 'user';
 }

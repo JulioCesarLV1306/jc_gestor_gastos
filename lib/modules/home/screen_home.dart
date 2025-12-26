@@ -6,6 +6,7 @@ import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gestor_de_gastos_jc/config/constans/app_colors.dart';
 import 'package:gestor_de_gastos_jc/config/services/user_service.dart';
+import 'package:gestor_de_gastos_jc/modules/auth/auth_provider.dart';
 import 'package:gestor_de_gastos_jc/modules/chatbot/chatbot_screen.dart';
 import 'package:gestor_de_gastos_jc/modules/home/provider_home.dart';
 import 'package:gestor_de_gastos_jc/widgets/custom_card.dart';
@@ -36,19 +37,68 @@ class _ScreenHomeState extends State<ScreenHome> {
   @override
   void initState() {
     super.initState();
+    _initializeHome();
+  }
+
+  Future<void> _initializeHome() async {
+    // Esperar un momento para que AuthProvider se inicialice
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // Verificar autenticación
+    final authProvider = context.read<AuthProvider>();
+    final firebaseUser = authProvider.user;
+    
+    if (firebaseUser != null) {
+      print('✅ ScreenHome: Usuario autenticado detectado - ${firebaseUser.email}');
+      
+      // Reinicializar el provider con el usuario autenticado
+      final providerHome = context.read<ProviderHome>();
+      await providerHome.init();
+    } else {
+      print('⚠️ ScreenHome: No hay usuario autenticado');
+    }
+    
     _loadUserName();
   }
 
   // ==================== MÉTODOS PRIVADOS ====================
   Future<void> _loadUserName() async {
-    await _userService.initHive();
-    final name = _userService.getUserData('name') ?? 'Usuario';
-    final email = _userService.getUserData('email') ?? 'Sin correo';
+    // Obtener datos del usuario autenticado en Firebase
+    final authProvider = context.read<AuthProvider>();
+    final firebaseUser = authProvider.user;
+    
+    if (firebaseUser != null) {
+      // Usar datos de Firebase si está autenticado
+      setState(() {
+        _userName = firebaseUser.displayName ?? 'Usuario';
+        _userEmail = firebaseUser.email ?? 'Sin correo';
+      });
+      
+      print('👤 Usuario autenticado: $_userName ($_userEmail)');
+      
+      // También cargar desde Hive para datos adicionales si es necesario
+      await _userService.initHive();
+      final hiveName = _userService.getUserData('name');
+      
+      // Si hay nombre en Hive y no en Firebase, usar Hive
+      if (hiveName != null && firebaseUser.displayName == null) {
+        setState(() {
+          _userName = hiveName;
+        });
+      }
+    } else {
+      // Fallback a Hive si no hay usuario de Firebase
+      await _userService.initHive();
+      final name = _userService.getUserData('name') ?? 'Usuario';
+      final email = _userService.getUserData('email') ?? 'Sin correo';
 
-    setState(() {
-      _userEmail = email;
-      _userName = name;
-    });
+      setState(() {
+        _userEmail = email;
+        _userName = name;
+      });
+      
+      print('⚠️ No hay usuario autenticado en Firebase, usando datos locales');
+    }
   }
 
   void _handleMenuButtonPressed() {

@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:gestor_de_gastos_jc/config/services/gasto_service.dart';
 import 'package:gestor_de_gastos_jc/config/services/presupuesto_service.dart';
+import 'package:gestor_de_gastos_jc/config/services/budget_user_firestore_service.dart';
 import 'package:gestor_de_gastos_jc/core/models/gasto_model.dart';
 import 'package:gestor_de_gastos_jc/core/models/presupuesto_model.dart';
 import 'package:hive/hive.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProviderHome with ChangeNotifier {
+  // Obtener el usuario actual de Firebase
+  String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+  
   //metood init
   Future<void> init() async {
     await _gastoService.initHive(); // Inicializar Hive
     await _presupuestoService.initHive(); // Inicializar Hive
-     cargarDatosPresupuesto(); // Obtener presupuesto al iniciar
+    
+    // Log del usuario actual
+    if (currentUserId != null) {
+      print('✅ ProviderHome inicializado para usuario: $currentUserId');
+      
+      // Sincronizar gastos desde Firestore
+      await _gastoService.syncGastosFromFirestore(currentUserId!);
+      
+      // Sincronizar presupuesto desde Firestore
+      await syncBudgetFromFirestore();
+    } else {
+      print('⚠️ ProviderHome inicializado sin usuario de Firebase');
+    }
+    
+    cargarDatosPresupuesto(); // Obtener presupuesto al iniciar
     await calcularAhorroSemanal(); // Calcular ahorro semanal al iniciar
     await cargarGastos(); // Cargar gastos al iniciar
   }
@@ -31,6 +50,7 @@ class ProviderHome with ChangeNotifier {
   //__________________________________________________________________
   final GastoService _gastoService = GastoService();
   final PresupuestoService _presupuestoService = PresupuestoService();
+  final BudgetUserFirestoreService _budgetFirestoreService = BudgetUserFirestoreService();
   //__________________________________________________________________
   //getts
   //ahorro
@@ -110,6 +130,7 @@ class ProviderHome with ChangeNotifier {
         cantidad: double.parse(_cantidadController.text),
         categoria: _categoriaSeleccionada!,
         fecha: _fechaSeleccionada!,
+        userId: currentUserId, // Agregar el ID del usuario
       );
 
       await _gastoService.saveGasto(nuevoGasto);
@@ -139,6 +160,19 @@ class ProviderHome with ChangeNotifier {
         await box.put('presupuesto', presupuestoActualizado);
 
         _saldoRestante = nuevoSaldoRestante;
+        
+        // Actualizar en Firestore
+        if (currentUserId != null) {
+          try {
+            await _budgetFirestoreService.updateBalance(
+              userId: currentUserId!,
+              saldoRestante: nuevoSaldoRestante,
+              presupuestoGeneral: presupuestoActual.presupuestoGeneral,
+            );
+          } catch (e) {
+            print('⚠️ Error al actualizar saldo en Firestore: $e');
+          }
+        }
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -192,6 +226,19 @@ class ProviderHome with ChangeNotifier {
       await box.put('presupuesto', presupuestoActualizado);
 
       _saldoRestante = nuevoSaldoRestante;
+      
+      // Actualizar en Firestore
+      if (currentUserId != null) {
+        try {
+          await _budgetFirestoreService.updateBalance(
+            userId: currentUserId!,
+            saldoRestante: nuevoSaldoRestante,
+            presupuestoGeneral: presupuestoActual.presupuestoGeneral,
+          );
+        } catch (e) {
+          print('⚠️ Error al actualizar saldo en Firestore: $e');
+        }
+      }
     }
     
     cargarGastos(); // Recargar la lista de gastos
@@ -223,6 +270,11 @@ class ProviderHome with ChangeNotifier {
 
   /// Establece el presupuesto general (solo lógica)
   Future<void> establecerPresupuesto(double presupuesto) async {
+    if (currentUserId == null) {
+      print('⚠️ No hay usuario autenticado');
+      return;
+    }
+
     // Asegurarse de que la caja esté abierta
     if (!Hive.isBoxOpen('presupuestoBox')) {
       await Hive.openBox<PresupuestoModel>('presupuestoBox');
@@ -250,6 +302,21 @@ class ProviderHome with ChangeNotifier {
     
     // Recalcular el ahorro recomendado considerando la meta
     await calcularAhorroSemanal();
+    
+    // Guardar en Firestore
+    try {
+      await _budgetFirestoreService.saveBudgetData(
+        userId: currentUserId!,
+        presupuestoGeneral: _presupuestoGeneral,
+        saldoRestante: _saldoRestante,
+        ahorro: _ahorro,
+        metaAhorro: _metaAhorro,
+        semanasMetaAhorro: _semanasMetaAhorro,
+      );
+      print('✅ Presupuesto guardado en Firestore');
+    } catch (e) {
+      print('⚠️ Error al guardar presupuesto en Firestore: $e');
+    }
     
     notifyListeners();
   }
@@ -378,6 +445,11 @@ class ProviderHome with ChangeNotifier {
       throw Exception('Meta y semanas deben ser mayores a 0');
     }
     
+    if (currentUserId == null) {
+      print('⚠️ No hay usuario autenticado');
+      return;
+    }
+    
     // Asegurarse de que la caja esté abierta
     if (!Hive.isBoxOpen('presupuestoBox')) {
       await Hive.openBox<PresupuestoModel>('presupuestoBox');
@@ -407,6 +479,73 @@ class ProviderHome with ChangeNotifier {
     await box.put('presupuesto', presupuestoActualizado);
     
     print('✅ Meta de ahorro guardada en Hive: \$$meta en $semanas semanas');
+    
+    // Guardar en Firestore
+    try {
+      await _budgetFirestoreService.saveBudgetData(
+        userId: currentUserId!,
+        presupuestoGeneral: _presupuestoGeneral,
+        saldoRestante: _saldoRestante,
+        ahorro: _ahorro,
+        metaAhorro: _metaAhorro,
+        semanasMetaAhorro: _semanasMetaAhorro,
+      );
+      print('✅ Meta de ahorro guardada en Firestore');
+    } catch (e) {
+      print('⚠️ Error al guardar meta de ahorro en Firestore: $e');
+    }
+    
     notifyListeners();
+  }
+  
+  /// Sincronizar presupuesto desde Firestore al iniciar
+  Future<void> syncBudgetFromFirestore() async {
+    if (currentUserId == null) {
+      print('⚠️ No hay usuario autenticado para sincronizar presupuesto');
+      return;
+    }
+    
+    try {
+      print('🔄 Sincronizando presupuesto desde Firestore...');
+      final budgetData = await _budgetFirestoreService.getBudgetData(currentUserId!);
+      
+      if (budgetData != null) {
+        // Asegurarse de que la caja esté abierta
+        if (!Hive.isBoxOpen('presupuestoBox')) {
+          await Hive.openBox<PresupuestoModel>('presupuestoBox');
+        }
+        
+        final box = Hive.box<PresupuestoModel>('presupuestoBox');
+        
+        // Actualizar datos locales desde Firestore
+        _presupuestoGeneral = (budgetData['presupuestoGeneral'] ?? 0.0).toDouble();
+        _saldoRestante = (budgetData['saldoRestante'] ?? 0.0).toDouble();
+        _ahorro = (budgetData['ahorroRecomendado'] ?? 0.0).toDouble();
+        _metaAhorro = (budgetData['metaAhorro'] ?? 0.0).toDouble();
+        _semanasMetaAhorro = (budgetData['semanasMetaAhorro'] ?? 0).toInt();
+        
+        // Guardar en Hive
+        final presupuestoActualizado = PresupuestoModel(
+          presupuestoGeneral: _presupuestoGeneral,
+          saldoRestante: _saldoRestante,
+          ahorro: _ahorro,
+          metaAhorro: _metaAhorro,
+          semanasMetaAhorro: _semanasMetaAhorro,
+        );
+        await box.put('presupuesto', presupuestoActualizado);
+        
+        print('✅ Presupuesto sincronizado desde Firestore');
+        print('   Presupuesto: \$$_presupuestoGeneral');
+        print('   Saldo: \$$_saldoRestante');
+        print('   Ahorro: \$$_ahorro');
+        print('   Meta: \$$_metaAhorro');
+        
+        notifyListeners();
+      } else {
+        print('ℹ️ No hay presupuesto guardado en Firestore para este usuario');
+      }
+    } catch (e) {
+      print('❌ Error al sincronizar presupuesto desde Firestore: $e');
+    }
   }
 }

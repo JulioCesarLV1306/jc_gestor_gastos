@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gestor_de_gastos_jc/config/constans/app_colors.dart';
-import 'package:gestor_de_gastos_jc/modules/chatbot/gemini_service.dart';
+import 'package:gestor_de_gastos_jc/modules/chatbot/chat_provider.dart';
 import 'package:gestor_de_gastos_jc/modules/home/provider_home.dart';
 import 'package:provider/provider.dart';
 
@@ -19,10 +19,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final GeminiService _geminiService = GeminiService();
-  final List<ChatMessage> _messages = [];
-  bool _isTyping = false;
-  bool _sendWithContext = false;
   late AnimationController _typingAnimationController;
 
   @override
@@ -32,15 +28,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    
-    // Mensaje de bienvenida
-    _addMessage(
-      ChatMessage(
-        text: '¡Hola! Soy tu asistente financiero inteligente. ¿En qué puedo ayudarte hoy?',
-        isUser: false,
-        timestamp: DateTime.now(),
-      ),
-    );
   }
 
   @override
@@ -49,13 +36,6 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     _scrollController.dispose();
     _typingAnimationController.dispose();
     super.dispose();
-  }
-
-  void _addMessage(ChatMessage message) {
-    setState(() {
-      _messages.add(message);
-    });
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -74,83 +54,20 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Agregar mensaje del usuario
-    _addMessage(
-      ChatMessage(
-        text: text,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ),
-    );
+    final chatProvider = context.read<ChatProvider>();
+    final providerHome = context.read<ProviderHome>();
 
     _messageController.clear();
 
-    // Mostrar indicador de escritura
-    setState(() {
-      _isTyping = true;
-    });
-
-    try {
-      // Obtener respuesta del servicio Gemini
-      final String response;
-      
-      if (_sendWithContext) {
-        // Obtener datos reales del Provider
-        final providerHome = Provider.of<ProviderHome>(context, listen: false);
-        
-        // Calcular total de gastos
-        final totalGastos = providerHome.gastos.fold<double>(
-          0.0,
-          (sum, gasto) => sum + gasto.cantidad,
-        );
-        
-        // Obtener categorías únicas
-        final categoriasUnicas = providerHome.gastos
-            .map((gasto) => gasto.categoria)
-            .toSet()
-            .toList();
-        
-        // Enviar con contexto financiero real
-        response = await _geminiService.sendMessageWithContext(
-          message: text,
-          totalGastos: totalGastos,
-          presupuesto: providerHome.presupuestoGeneral,
-          ahorro: providerHome.ahorro,
-          categorias: categoriasUnicas,
-        );
-      } else {
-        // Enviar sin contexto
-        response = await _geminiService.sendMessage(text);
-      }
-      
-      setState(() {
-        _isTyping = false;
-      });
-
-      // Agregar respuesta del bot
-      _addMessage(
-        ChatMessage(
-          text: response,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      );
-    } catch (e) {
-      setState(() {
-        _isTyping = false;
-      });
-
-      _addMessage(
-        ChatMessage(
-          text: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      );
-    }
+    // Enviar mensaje usando el provider
+    await chatProvider.sendMessage(text, providerHome: providerHome);
+    
+    _scrollToBottom();
   }
 
   void _showSuggestions() {
+    final chatProvider = context.read<ChatProvider>();
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -181,7 +98,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
               ],
             ),
             const SizedBox(height: 16),
-            ...(_geminiService.getSuggestedQuestions().map((question) =>
+            ...((chatProvider.getSuggestedQuestions()).map((question) =>
                 _buildSuggestionChip(question))),
           ],
         ),
@@ -232,6 +149,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
   }
 
   void _clearChat() {
+    final chatProvider = context.read<ChatProvider>();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -246,20 +165,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _messages.clear();
-              });
-              _geminiService.clearChatHistory();
+              chatProvider.clearChat();
               Navigator.pop(context);
-              
-              // Agregar mensaje de bienvenida nuevamente
-              _addMessage(
-                ChatMessage(
-                  text: '¡Hola! Soy tu asistente financiero inteligente. ¿En qué puedo ayudarte hoy?',
-                  isUser: false,
-                  timestamp: DateTime.now(),
-                ),
-              );
             },
             child: const Text(
               'Borrar',
@@ -273,6 +180,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
 
   @override
   Widget build(BuildContext context) {
+    final chatProvider = context.watch<ChatProvider>();
+    
     return Scaffold(
       appBar: _buildAppBar(),
       body: Container(
@@ -289,10 +198,10 @@ class _ChatbotScreenState extends State<ChatbotScreen>
         child: Column(
           children: [
             Expanded(
-              child: _buildMessageList(),
+              child: _buildMessageList(chatProvider),
             ),
-            if (_isTyping) _buildTypingIndicator(),
-            _buildMessageInput(),
+            if (chatProvider.isTyping) _buildTypingIndicator(),
+            _buildMessageInput(chatProvider),
           ],
         ),
       ),
@@ -366,8 +275,8 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     );
   }
 
-  Widget _buildMessageList() {
-    if (_messages.isEmpty) {
+  Widget _buildMessageList(ChatProvider chatProvider) {
+    if (chatProvider.messages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -418,9 +327,9 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _messages.length,
+      itemCount: chatProvider.messages.length,
       itemBuilder: (context, index) {
-        return _ChatBubble(message: _messages[index]);
+        return _ChatBubble(message: chatProvider.messages[index]);
       },
     );
   }
@@ -465,7 +374,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(ChatProvider chatProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -483,7 +392,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Indicador de contexto
-            if (_sendWithContext)
+            if (chatProvider.sendWithContext)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -519,7 +428,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                 // Botón de contexto
                 Container(
                   decoration: BoxDecoration(
-                    color: _sendWithContext
+                    color: chatProvider.sendWithContext
                         ? AppColors.primaryBlue.withOpacity(0.15)
                         : Colors.grey[200],
                     shape: BoxShape.circle,
@@ -527,21 +436,19 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                   child: IconButton(
                     icon: Icon(
                       Icons.account_balance_wallet,
-                      color: _sendWithContext
+                      color: chatProvider.sendWithContext
                           ? AppColors.primaryBlue
                           : Colors.grey[600],
                       size: 20,
                     ),
                     onPressed: () {
-                      setState(() {
-                        _sendWithContext = !_sendWithContext;
-                      });
+                      chatProvider.toggleContext();
                       
                       // Mostrar mensaje informativo
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            _sendWithContext
+                            chatProvider.sendWithContext
                                 ? '✓ Contexto financiero activado'
                                 : '✗ Contexto financiero desactivado',
                           ),
@@ -553,7 +460,7 @@ class _ChatbotScreenState extends State<ChatbotScreen>
                         ),
                       );
                     },
-                    tooltip: _sendWithContext
+                    tooltip: chatProvider.sendWithContext
                         ? 'Desactivar contexto financiero'
                         : 'Activar contexto financiero',
                   ),
@@ -731,17 +638,4 @@ class _ChatBubble extends StatelessWidget {
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
-}
-
-/// Modelo de mensaje de chat
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-    required this.timestamp,
-  });
 }

@@ -21,13 +21,15 @@ class GastoModelAdapter extends TypeAdapter<GastoModel> {
       cantidad: fields[1] as double,
       categoria: fields[2] as String,
       fecha: fields[3] as DateTime,
+      firestoreId: fields[4] as String?,
+      userId: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, GastoModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.descripcion)
       ..writeByte(1)
@@ -35,7 +37,11 @@ class GastoModelAdapter extends TypeAdapter<GastoModel> {
       ..writeByte(2)
       ..write(obj.categoria)
       ..writeByte(3)
-      ..write(obj.fecha);
+      ..write(obj.fecha)
+      ..writeByte(4)
+      ..write(obj.firestoreId)
+      ..writeByte(5)
+      ..write(obj.userId);
   }
 
   @override
